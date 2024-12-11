@@ -1,3 +1,4 @@
+// main.js
 import * as THREE from "../../libs/three125/three.module.js";
 import { GLTFLoader } from "../../libs/three/jsm/GLTFLoader.js";
 import { RGBELoader } from "../../libs/three/jsm/RGBELoader.js";
@@ -55,17 +56,6 @@ class App {
     this.setupXR();
 
     window.addEventListener("resize", this.resize.bind(this));
-
-    this.renderer.domElement.addEventListener(
-      "touchstart",
-      this.onTouchStart.bind(this),
-      false
-    );
-    this.renderer.domElement.addEventListener(
-      "touchend",
-      this.onTouchEnd.bind(this),
-      false
-    );
   }
 
   setupXR() {
@@ -74,17 +64,9 @@ class App {
     if ("xr" in navigator) {
       navigator.xr.isSessionSupported("immersive-ar").then((supported) => {
         if (supported) {
-          const collection = document.getElementsByClassName("ar-button");
-          [...collection].forEach((el) => {
-            el.style.display = "block";
-          });
+          ARButton.createButton(this.renderer);
         }
       });
-
-      const description = document.getElementById("ar-description");
-      if (description) {
-        description.style.display = "block";
-      }
     }
 
     const self = this;
@@ -98,55 +80,6 @@ class App {
       if (self.reticle.visible) {
         self.chair.position.setFromMatrixPosition(self.reticle.matrix);
         self.chair.visible = true;
-
-        const soundMap = {
-          1: "esound.mp3",
-          2: "b.mp3",
-          3: "b.mp3",
-          4: "b.mp3",
-        };
-
-        const audioFile = soundMap[self.currentModelId];
-
-        if (audioFile) {
-          console.log(`Playing sound for model ${self.currentModelId}: ${audioFile}`);
-
-          if (!self.audio || self.audioFile !== audioFile) {
-            if (self.audio) {
-              self.audio.stop();
-              self.camera.remove(self.audio.listener);
-            }
-
-            const listener = new THREE.AudioListener();
-            self.camera.add(listener);
-
-            self.audio = new THREE.Audio(listener);
-            const audioLoader = new THREE.AudioLoader();
-
-            audioLoader.load(
-              `./assets/audio/${audioFile}`,
-              function (buffer) {
-                self.audio.setBuffer(buffer);
-                self.audio.setLoop(true);
-                self.audio.setVolume(1.0);
-                self.audio.play();
-              },
-              undefined,
-              function (error) {
-                console.error(`Error loading audio file ${audioFile}:`, error);
-              }
-            );
-
-            self.audioFile = audioFile;
-          } else {
-            if (self.audio.isPlaying) {
-              self.audio.stop();
-            }
-            self.audio.play();
-          }
-        } else {
-          console.log(`No sound assigned for model ID: ${self.currentModelId}`);
-        }
       }
     }
 
@@ -162,6 +95,19 @@ class App {
     }
   }
 
+  enableARQuickLook() {
+    const quickLookButton = document.createElement("a");
+    quickLookButton.rel = "ar";
+    quickLookButton.className = "ar-quicklook-button";
+    quickLookButton.style.display = "none";
+    document.body.appendChild(quickLookButton);
+
+    this.showChair = function (id) {
+      quickLookButton.href = `../../assets/models/ELE${id}.usdz`;
+      quickLookButton.click();
+    };
+  }
+
   showChair(id) {
     this.initAR();
 
@@ -171,9 +117,9 @@ class App {
     this.loadingBar.visible = true;
 
     const scaleConfig = {
-      1: { x: 5, y: 5, z: 5 }, // Scale for ELE1.glb
-      2: { x: 0.01, y: 0.01, z: 0.01 }, // Scale for ELE2.glb
-      3: { x: 0.06, y: 0.06, z: 0.06 }, // Scale for ELE3.glb
+      1: { x: 5, y: 5, z: 5 },
+      2: { x: 0.01, y: 0.01, z: 0.01 },
+      3: { x: 0.06, y: 0.06, z: 0.06 },
       4: { x: 0.03, y: 0.03, z: 0.03 },
       5: { x: 0.3, y: 0.3, z: 0.3 },
     };
@@ -184,20 +130,10 @@ class App {
         self.scene.add(gltf.scene);
         self.chair = gltf.scene;
 
-        const scale = scaleConfig[id] || { x: 1, y: 1, z: 1 }; // Default scale if not in config
+        const scale = scaleConfig[id] || { x: 1, y: 1, z: 1 };
         self.chair.scale.set(scale.x, scale.y, scale.z);
 
         self.chair.visible = false;
-
-        self.currentModelId = id;
-
-        if (gltf.animations && gltf.animations.length > 0) {
-          self.mixer = new THREE.AnimationMixer(gltf.scene);
-          gltf.animations.forEach((clip) => {
-            self.mixer.clipAction(clip).play();
-          });
-        }
-
         self.loadingBar.visible = false;
 
         self.renderer.setAnimationLoop(self.render.bind(self));
@@ -229,7 +165,6 @@ class App {
       (texture) => {
         const envMap = pmremGenerator.fromEquirectangular(texture).texture;
         pmremGenerator.dispose();
-
         self.scene.environment = envMap;
       },
       undefined,
@@ -239,23 +174,10 @@ class App {
     );
   }
 
-  onTouchStart(event) {
-    this.controls.enabled = true;
-  }
-
-  onTouchEnd(event) {
-    this.controls.enabled = false;
-  }
-
   render(timestamp, frame) {
     if (frame) {
       if (this.hitTestSourceRequested === false) this.requestHitTestSource();
-
       if (this.hitTestSource) this.getHitTestResults(frame);
-    }
-
-    if (this.mixer) {
-      this.mixer.update(this.clock.getDelta());
     }
 
     this.renderer.render(this.scene, this.camera);
