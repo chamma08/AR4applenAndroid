@@ -1,0 +1,29 @@
+body {
+    margin: 0;
+    overflow: hidden;
+  }
+  
+  #ar-description {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    display: none;
+  }
+  
+  a[rel="ar"] {
+    display: block;
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    color: white;
+    background: #007bff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 16px;
+  }
+  

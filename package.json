@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@webxr-input-profiles/motion-controllers": "^1.0.0",
+    "gltf-loader": "^1.0.0",
+    "http-server": "^14.1.1",
+    "three": "^0.171.0"
+  }
+}
